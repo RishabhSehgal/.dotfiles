@@ -1,0 +1,15 @@
+:PROPERTIES:
+:ID:       9db53f5d-702f-4c51-a224-7bad3a2cfcbb
+:END:
+#+title: Programming Languages
+#+filetags: :draft:article:
+
+Here are some good programming languages:
+
+* Python
+* [[id:4789a826-5bba-4869-b981-ec73c353dc9d][Emacs Lisp]]
+* C
+* C++
+* Haskell
+* Java
+* [[id:e6a0bbb0-3f8c-430c-b963-65a150a83dbc][Scheme]]

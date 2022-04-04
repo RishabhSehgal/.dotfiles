@@ -1,0 +1,5 @@
+:PROPERTIES:
+:ID:       4789a826-5bba-4869-b981-ec73c353dc9d
+:END:
+#+title: Emacs Lisp
+#+filetags: :draft:article:
