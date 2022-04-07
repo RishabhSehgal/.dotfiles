@@ -12,7 +12,7 @@
 ;;(make-directory "~/.org/gtd")
 ;;(make-directory "~/.org/braindump/org")
 
-(require 'init-vulpea)
+;;(require 'init-vulpea)
 
 (setq user-full-name "Rishabh Sehgal"
       user-mail-address "sehgal.rish@utexas.edu"
@@ -454,7 +454,7 @@
                          :node (org-roam-node-create :title title)
                          :props '(:finalize find-file)))))
 
-
+(use-package! org-super-agenda)
 (use-package! thrift)
 
 (after! company
@@ -551,11 +551,11 @@ With a prefix ARG always prompt for command to use."
  [C-tab] #'+fold/open-all
  [C-iso-lefttab] #'+fold/close-all)
 
-(use-package! vulpea
-  ;; hook into org-roam-db-autosync-mode you wish to enable
-  ;; persistence of meta values (see respective section in README to
-  ;; find out what meta means)
-  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
+;;(use-package! vulpea
+;;  ;; hook into org-roam-db-autosync-mode you wish to enable
+;;  ;; persistence of meta values (see respective section in README to
+;;  ;; find out what meta means)
+;;  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
 
 (org-roam-db-sync 'force)
 ;;(use-package! abnormal

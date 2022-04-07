@@ -22,8 +22,8 @@
   :recipe (:host github :repo "tarsius/ox-texinfo-plus"))
 (package! nov
   :recipe (:type git :repo "https://depp.brause.cc/nov.el.git"))
-(package! vulpea
-  :recipe (:host github :repo "d12frosted/vulpea"))
+;;(package! vulpea
+;;  :recipe (:host github :repo "d12frosted/vulpea"))
 (package! git-link)
 (package! yaml-mode)
 (package! emmet-mode)
@@ -34,6 +34,7 @@
 (package! emacsql-sqlite3)
 (package! thrift)
 (package! mixed-pitch)
+(package! org-super-agenda)
 ;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
 ;(package! some-package)
 
