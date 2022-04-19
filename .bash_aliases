@@ -42,6 +42,12 @@ alias shirinb='cd /home/local/big/asayal/shirin_binary'
 alias cim='cd ~rishabhs/Documents/UTA/Research/CiM'
 alias theta='ssh -Y -p 222 rishabhs@theta.cerc.utexas.edu'
 
+###### DOOM aliases ######
+alias dd='doom doctor'
+alias ds='doom sync'
+alias dds='doom sync; doom doctor'
+
+
 ###### Git aliases ######
 alias gits='git status'
 alias gitl='git log'

@@ -14,6 +14,9 @@
 
 ;;(require 'init-vulpea)
 
+(load "~/.doom.d/vulpea.el")
+(load "~/.doom.d/syscraft.el")
+
 (setq user-full-name "Rishabh Sehgal"
       user-mail-address "sehgal.rish@utexas.edu"
       doom-scratch-initial-major-mode 'lisp-interaction-mode
@@ -49,12 +52,14 @@
 
 (setq rish/default-bibliography `(,(expand-file-name "braindump/org/refs-rish.bib" org-directory)))
 
-(use-package modus-themes
+(use-package! modus-themes
   :ensure
   :init
   ;; Add all your customizations prior to loading the themes
   (setq modus-themes-italic-constructs t
-        modus-themes-completions 'opinionated
+        modus-themes-completions
+        '((t . (extrabold intense)))
+     ;; modus-themes-completions 'opinionated
         modus-themes-variable-pitch-headings t
         modus-themes-scale-headings t
         modus-themes-variable-pitch-ui t
@@ -157,8 +162,16 @@
 (require 'find-lisp)
 (setq rish/org-agenda-directory
       (expand-file-name "gtd/" org-directory))
-(setq org-agenda-files
-      (find-lisp-find-files rish/org-agenda-directory "\.org$"))
+(setq rish/org-roam-directory
+      (expand-file-name "roam/" org-directory)) 
+;; recursive search of org files. filter out certain directory from lookup by adding a array filter. Example, filtering out all org files in xxxx/xxx/daily/ directory
+(setq org-agenda-files 
+      (seq-filter (lambda(x) (not (string-match "/daily/"(file-name-directory x)))) 
+       (directory-files-recursively rish/org-roam-directory "\\.org$")
+       ))
+;;(setq org-agenda-files 
+;;      '((find-lisp-find-files rish/org-agenda-directory "\.org$") 
+;;        (find-lisp-find-files "~/org/braindump/org/project/" "\.org$")))
 
 
 ;; javascript:location.href ='org-protocol://capture?template=c&url='+encodeURIComponent(location.href) +'&title='+encodeURIComponent(document.title)+'&body='+encodeURIComponent(window.getSelection())
@@ -195,6 +208,10 @@
   (interactive)
   (org-capture nil "e"))
 
+(defun rish/org-protocol-capture ()
+  (interactive)
+  (org-capture nil "c"))
+
 (defun rish/org-capture-default ()
   (interactive)
   (org-capture nil "w"))
@@ -210,8 +227,37 @@
 (bind-key "C-c <tab>" #'rish/org-capture-inbox)
 (bind-key "C-c SPC" #'rish/org-agenda)
 
-(setq org-todo-keywords
-      '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)")))
+;;(setq org-todo-keywords
+;;      '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)")))
+  ;; setup todo keywords
+(setq
+   org-todo-keywords
+   '((sequence "TODO(t)" "|" "DONE(d!)")
+     (sequence "WAITING(w@/!)"
+               "HOLD(h@/!)"
+               "|"
+               "CANCELLED(c@/!)"
+               "MEETING"))
+   ;; use fast todo selection
+   org-use-fast-todo-selection t
+
+   ;; block parent until children are done
+   org-enforce-todo-dependencies t
+
+   ;; allo to fast fix todo state without triggering anything
+   org-treat-S-cursor-todo-selection-as-state-change nil
+
+   ;; setup state triggers
+   org-todo-state-tags-triggers
+   '(("CANCELLED" ("CANCELLED" . t))
+     ("WAITING" ("WAITING" . t))
+     ("HOLD" ("WAITING") ("HOLD" . t))
+     (done ("WAITING") ("HOLD") ("FOCUS"))
+     ("TODO" ("WAITING") ("CANCELLED") ("HOLD"))
+     ("DONE" ("WAITING") ("CANCELLED") ("HOLD")))
+
+   ;; use drawer for state changes
+   org-log-into-drawer t)
 
 (defun log-todo-next-creation-date (&rest ignore)
   "Log NEXT creation time in the property drawer under the key 'ACTIVATED'"
@@ -389,15 +435,21 @@
         :prefix "n"
         :desc "org-roam" "l" #'org-roam-buffer-toggle
         :desc "org-roam-node-insert" "i" #'org-roam-node-insert
+        :desc "org-roam-node-insert" "I" #'org-roam-node-insert-immediate
         :desc "org-roam-node-find" "f" #'org-roam-node-find
         :desc "org-roam-ref-find" "r" #'org-roam-ref-find
         :desc "org-roam-show-graph" "g" #'org-roam-show-graph
         :desc "rish/org-capture-slipbox" "<tab>" #'rish/org-capture-slipbox
-        :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/org/braindump/org/")
+        :desc "org-roam-capture" "c" #'org-roam-capture
+        :desc "org-roam-capture-task" "t" #'my/org-roam-capture-task
+        :desc "org-roam-capture-inbox" "b" #'my/org-roam-capture-inbox
+        :desc "org-roam-find-project" "p" #'my/org-roam-find-project
+        :desc "org-roam-dailies" "d" #'org-roam-dailies-map)
+  (setq org-roam-directory (file-truename "~/org/roam")
         org-roam-db-gc-threshold most-positive-fixnum
         org-id-link-to-org-use-id t)
   :config
+  (require 'org-roam-dailies) ;; Ensure the keymap is available
   (org-roam-db-autosync-mode +1)
   (set-popup-rules!
     `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
@@ -406,20 +458,36 @@
        :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 2)))
   (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
   (setq org-roam-capture-templates
-        '(("m" "main" plain
+        '(
+        ;; ("d" "default" plain "* TODO %?\n /Entered on/ %U"
+        ;; :if-new (file+head "default/%<%Y%m%d%H%M%S>-${slug}.org"
+        ;;                      "${title}\n")
+        ;; :immediate-finish t
+        ;; :unnarrowed t)
+          ("d" "default" plain "%?"
+           :if-new (file+head "default/%<%Y%m%d%H%M%S>-${slug}.org" 
+                              "${title}\n#+date: %U\n")
+           :unnarrowed t)
+          ("m" "main" plain
            "%?"
-           :if-new (file+head "main/${slug}.org"
-                              "#+title: ${title}\n")
+           :if-new (file+head "main/%<%Y%m%d%H%M%S>-${slug}.org"
+                              "${title}\n#+date: %U\n")
            :immediate-finish t
            :unnarrowed t)
           ("r" "reference" plain "%?"
            :if-new
-           (file+head "reference/${slug}.org" "#+title: ${title}\n")
+           (file+head "reference/%<%Y%m%d%H%M%S>-${slug}.org" 
+                      "${title}\n#+date: %U\n")
            :immediate-finish t
+           :unnarrowed t)
+          ("p" "project" plain "%?"
+           :if-new (file+head "project/%<%Y%m%d%H%M%S>-${slug}.org" 
+                              "${title}\n#+filetags: Project\n#+date: %U\n")
            :unnarrowed t)
           ("a" "article" plain "%?"
            :if-new
-           (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
+           (file+head "articles/%<%Y%m%d%H%M%S>-${slug}.org" 
+                      "${title}\n#+filetags: :article:\n#+date: %U\n")
            :immediate-finish t
            :unnarrowed t)))
   (defun rish/tag-new-node-as-draft ()
@@ -551,13 +619,31 @@ With a prefix ARG always prompt for command to use."
  [C-tab] #'+fold/open-all
  [C-iso-lefttab] #'+fold/close-all)
 
-;;(use-package! vulpea
-;;  ;; hook into org-roam-db-autosync-mode you wish to enable
-;;  ;; persistence of meta values (see respective section in README to
-;;  ;; find out what meta means)
-;;  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
+(use-package! vulpea
+  :ensure t
+  :after org-roam
+  :init
+  (map! :leader
+        :prefix "v"
+        :desc "vulpea-insert" "i" #'vulpea-insert
+        :desc "vulpea-tags-add" "t" #'vulpea-tags-add
+        :desc "vulpea-tags-delete" "T" #'vulpea-tags-delete
+        :desc "vulpea-agenda-files" "a" #'vulpea-agenda-files
+        )
+  ;; hook into org-roam-db-autosync-mode you wish to enable
+  ;; persistence of meta values (see respective section in README to
+  ;; find out what meta means)
+  :config
+  (load! "vulpea-agenda")
+  (add-hook 'vulpea-insert-handle-functions 
+            #'vulpea-insert-handle)
+  ;; prevent headings from clogging tag  
+  (setq org-tags-exclude-from-inheritance '("project" 
+                                            "people"))
+  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
 
 (org-roam-db-sync 'force)
+
 ;;(use-package! abnormal
 ;;  :config
 ;;  (abnormal-mode))

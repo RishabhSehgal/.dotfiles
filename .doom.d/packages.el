@@ -24,6 +24,7 @@
   :recipe (:type git :repo "https://depp.brause.cc/nov.el.git"))
 ;;(package! vulpea
 ;;  :recipe (:host github :repo "d12frosted/vulpea"))
+(package! vulpea)
 (package! git-link)
 (package! yaml-mode)
 (package! emmet-mode)
