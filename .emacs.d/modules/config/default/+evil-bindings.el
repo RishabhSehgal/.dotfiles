@@ -305,7 +305,7 @@
        :desc "Switch buffer"           "<" #'switch-to-buffer)
       :desc "Switch to last buffer" "`"    #'evil-switch-to-windows-last-buffer
       :desc "Resume last search"    "'"
-      (cond ((featurep! :completion vertico)    #'+vertico/resume)
+      (cond ((featurep! :completion vertico)    #'vertico-repeat)
             ((featurep! :completion ivy)        #'ivy-resume)
             ((featurep! :completion helm)       #'helm-resume))
 
@@ -366,6 +366,7 @@
        :desc "Kill other buffers"          "O"   #'doom/kill-other-buffers
        :desc "Previous buffer"             "p"   #'previous-buffer
        :desc "Revert buffer"               "r"   #'revert-buffer
+       :desc "Rename buffer"               "R"   #'rename-buffer
        :desc "Save buffer"                 "s"   #'basic-save-buffer
        :desc "Save all buffers"            "S"   #'evil-write-all
        :desc "Save buffer as root"         "u"   #'doom/sudo-save-buffer
