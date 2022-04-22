@@ -196,12 +196,10 @@ If nil it defaults to `split-string-default-separators', normally
                              (point-max) t)
       (replace-match ""))))
 
-
 (dolist (file (org-roam-list-files))
   (message "processing %s" file)
   (with-current-buffer (or (find-buffer-visiting file)
                            (find-file-noselect file))
-    (let ((tags (vulpea-buffer-tags-get)))
-      (apply #'vulpea-buffer-tags-set tags))
-    (save-buffer)
-    (delete-buffer))
+    (vulpea-project-update-tag)
+    (save-buffer)))
+

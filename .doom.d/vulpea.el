@@ -45,7 +45,7 @@ Refer to `org-agenda-prefix-format' for more information."
 ;;(defun vulpea-tags-add ()
 ;;  "Add a tag to current note."
 ;;  (interactive)
-;;  ;; since https://github.com/org-roam/org-roam/pull/1515
+;;  ;; since https://github.com/org-roam/orcd ~/.emacs.dg-roam/pull/1515
 ;;  ;; `org-roam-tag-add' returns added tag, we could avoid reading tags
 ;;  ;; in `vulpea-ensure-filetag', but this way it can be used in
 ;;  ;; different contexts while having simple implementation.

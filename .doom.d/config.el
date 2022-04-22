@@ -451,6 +451,7 @@
   :config
   (require 'org-roam-dailies) ;; Ensure the keymap is available
   (org-roam-db-autosync-mode +1)
+  (org-roam-db-sync 'force)
   (set-popup-rules!
     `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
        :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
@@ -522,7 +523,7 @@
                          :node (org-roam-node-create :title title)
                          :props '(:finalize find-file)))))
 
-(use-package! org-super-agenda)
+;;(use-package! org-super-agenda)
 (use-package! thrift)
 
 (after! company
@@ -621,7 +622,7 @@ With a prefix ARG always prompt for command to use."
 
 (use-package! vulpea
   :ensure t
-  :after org-roam
+  :after (org-agenda org-roam)
   :init
   (map! :leader
         :prefix "v"
@@ -629,20 +630,36 @@ With a prefix ARG always prompt for command to use."
         :desc "vulpea-tags-add" "t" #'vulpea-tags-add
         :desc "vulpea-tags-delete" "T" #'vulpea-tags-delete
         :desc "vulpea-agenda-files" "a" #'vulpea-agenda-files
+        :desc "vulpea-find" "f" #'vulpea-find
         )
+  (add-to-list 'window-buffer-change-functions 
+               #'vulpea-setup-buffer)
   ;; hook into org-roam-db-autosync-mode you wish to enable
   ;; persistence of meta values (see respective section in README to
   ;; find out what meta means)
   :config
+  (load! "vulpea")
   (load! "vulpea-agenda")
   (add-hook 'vulpea-insert-handle-functions 
             #'vulpea-insert-handle)
-  ;; prevent headings from clogging tag  
+  ;; prevent headings from clogging tag 
+  (setq org-use-tag-inheritance t)
   (setq org-tags-exclude-from-inheritance '("project" 
                                             "people"))
+  (setq-default vulpea-find-default-filter 
+                (lambda (note) 
+                  (= (vulpea-note-level note) 0)) 
+                vulpea-insert-default-filter 
+                (lambda (note) 
+                  (= (vulpea-note-level note) 0)))
   :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
 
-(org-roam-db-sync 'force)
+(global-set-key (kbd "s-<right>") 'move-end-of-line)
+(global-set-key (kbd "s-z") 'undo)
+(global-set-key (kbd "s-c") 'copy)
+(global-set-key (kbd "s-v") 'paste)
+
+;; (org-roam-db-sync 'force)
 
 ;;(use-package! abnormal
 ;;  :config
