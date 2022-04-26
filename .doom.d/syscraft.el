@@ -184,7 +184,7 @@ GROUP BY id")))
                               all-titles)))))
 
 
-;;(add-to-list 'org-after-todo-state-change-hook
-;;        (lambda ()
-;;             (when (equal org-state "DONE")
-;;                (my/org-roam-copy-todo-to-today))))
+(advice-add 'org-after-todo-state-change-hook :after 
+            (lambda () 
+              (when (equal org-state "DONE") 
+                (my/org-roam-copy-todo-to-today))))

@@ -36,6 +36,8 @@
 (package! thrift)
 (package! mixed-pitch)
 (package! org-super-agenda)
+(package! org-mac-iCal
+  :recipe (:host github :repo "ndw/org-mac-iCal"))
 ;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
 ;(package! some-package)
 

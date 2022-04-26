@@ -176,7 +176,7 @@
 
 ;; javascript:location.href ='org-protocol://capture?template=c&url='+encodeURIComponent(location.href) +'&title='+encodeURIComponent(document.title)+'&body='+encodeURIComponent(window.getSelection())
 (setq org-capture-templates
-      `(("i" "Inbox" entry  (file "gtd/inbox.org")
+      `(("i" "Inbox" entry  (file "~/org/gtd/inbox.org")
          ,(concat "* TODO %?\n"
                   "/Entered on/ %U"))
         ("e" "Email" entry  (file+headline "gtd/emails.org" "Emails")
@@ -184,14 +184,14 @@
                   "/Entered on/ %U") 
          :immediate-finish t)
 
-        ("c" "org-protocol-capture" entry (file "gtd/inbox.org")
+        ("c" "org-protocol-capture" entry (file "~/org/gtd/inbox.org")
          ,(concat "* TODO [[%:link][%:description]]\n\n %i %?\n"
                    "/Entered on/ %U")
                   :immediate-finish t)
         ("w" 
          "Default Template" 
          entry  
-         (file+headline "gtd/inbox.org" "Notes")
+         (file+headline "~/org/gtd/inbox.org" "Notes")
          ,(concat "* TODO %?\n"
                   "/Entered on/ %U")
          "* %^{Title}\n\n  Source: %u, %c\n\n  %i"
@@ -230,34 +230,63 @@
 ;;(setq org-todo-keywords
 ;;      '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)")))
   ;; setup todo keywords
-(setq
-   org-todo-keywords
-   '((sequence "TODO(t)" "|" "DONE(d!)")
-     (sequence "WAITING(w@/!)"
-               "HOLD(h@/!)"
-               "|"
-               "CANCELLED(c@/!)"
-               "MEETING"))
-   ;; use fast todo selection
-   org-use-fast-todo-selection t
 
-   ;; block parent until children are done
-   org-enforce-todo-dependencies t
+;; setup todo keywords
+(setq org-todo-keywords
+ '((sequence "TODO(t)" "PROJ(p)" "NEXT(n)" "|" "DONE(d!)")
+   (sequence "WAITING(w@/!)"
+             "HOLD(h@/!)"
+             "|"
+             "CANCELLED(c@/!)"
+             "MEETING"))
 
-   ;; allo to fast fix todo state without triggering anything
-   org-treat-S-cursor-todo-selection-as-state-change nil
+ ;; use fast todo selection
+ org-use-fast-todo-selection t
+ ;; block parent until children are done
+ org-enforce-todo-dependencies t
+ ;; allo to fast fix todo state without triggering anything
+ org-treat-S-cursor-todo-selection-as-state-change nil
+ ;; setup state triggers
+ org-todo-state-tags-triggers
+ '(("CANCELLED" ("CANCELLED" . t))
+   ("WAITING" ("WAITING" . t))
+   ("HOLD" ("WAITING") ("HOLD" . t))
+   (done ("WAITING") ("HOLD") ("FOCUS"))
+   ("TODO" ("WAITING") ("CANCELLED") ("HOLD"))
+   ("DONE" ("WAITING") ("CANCELLED") ("HOLD"))
+   ("PROJ" ("WAITING") ("CANCELLED") ("HOLD"))
+   ("NEXT" ("WAITING") ("CANCELLED") ("HOLD")))
 
-   ;; setup state triggers
-   org-todo-state-tags-triggers
-   '(("CANCELLED" ("CANCELLED" . t))
-     ("WAITING" ("WAITING" . t))
-     ("HOLD" ("WAITING") ("HOLD" . t))
-     (done ("WAITING") ("HOLD") ("FOCUS"))
-     ("TODO" ("WAITING") ("CANCELLED") ("HOLD"))
-     ("DONE" ("WAITING") ("CANCELLED") ("HOLD")))
+ ;; use drawer for state changes
+ org-log-into-drawer t)
+;; The following are a collection of useful options for clocking, most taken from Matthew Lee Hinman, in his emacs blog series.
+;; Resume clocking task when emacs is restarted
+(org-clock-persistence-insinuate)
+;; Save the running clock and all clock history when exiting Emacs, load it on startup
+(setq org-clock-persist t)
+;; Resume clocking task on clock-in if the clock is open
+(setq org-clock-in-resume t)
+;; prompt to resume an active clock
+(setq org-clock-persist-query-resume t)
+;; Change tasks to active when clocking in
+;;(setq org-clock-in-switch-to-state "ACTV")
 
-   ;; use drawer for state changes
-   org-log-into-drawer t)
+;; change tasks back to NEXT when clocking out, so it is marked in my agenda in its own area
+(setq org-clock-out-switch-to-state "NEXT")
+;; Save clock data and state changes and notes in the LOGBOOK drawer
+(setq org-clock-into-drawer t)
+;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks
+;; with 0:00 duration
+(setq org-clock-out-remove-zero-time-clocks t)
+;; Clock out when moving task to a done state
+(setq org-clock-out-when-done t)
+;; Enable auto clock resolution for finding open clocks
+(setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
+;; Include current clocking task in clock reports
+(setq org-clock-report-include-clocking-task t)
+;; use pretty things for the clocktable
+(setq org-pretty-entities t)
+
 
 (defun log-todo-next-creation-date (&rest ignore)
   "Log NEXT creation time in the property drawer under the key 'ACTIVATED'"
@@ -377,6 +406,13 @@
          ("o" . org-clock-convenience-fill-gap)
          ("e" . org-clock-convenience-fill-gap-both)))
 
+;; org Mac iCal
+;; Enable org mac ical
+(require 'org-mac-iCal)
+
+;; Set calendar list:
+(setq org-mac-iCal-range 10)
+
 (use-package! org-agenda
   :init
   (map! "<f1>" #'rish/switch-to-agenda)
@@ -413,21 +449,177 @@
          (t
           nil)))))
 
-  (setq org-columns-default-format "%40ITEM(Task) %Effort(EE){:} %CLOCKSUM(Time Spent) %SCHEDULED(Scheduled) %DEADLINE(Deadline)")
-  (setq org-agenda-custom-commands `((" " "Agenda"
-                                      ((alltodo ""
-                                                ((org-agenda-overriding-header "Inbox")
-                                                 (org-agenda-files `(,(expand-file-name "gtd/inbox.org" org-directory)))))
-                                       (agenda ""
-                                               ((org-agenda-span 'week)
-                                                (org-deadline-warning-days 365)))
-                                       (todo "NEXT"
-                                             ((org-agenda-overriding-header "In Progress")
-                                              (org-agenda-files `(,(expand-file-name "gtd/projects.org" org-directory)))))
-                                       (todo "TODO"
-                                             ((org-agenda-overriding-header "Active Projects")
-                                              (org-agenda-files `(,(expand-file-name "gtd/projects.org" org-directory)))
-                                              (org-agenda-skip-function #'rish/skip-projects))))))))
+  ;; Disable the diary by default in agenda views, as it adds clutter to the default weekly agenda. In the weekly agenda I simply want to see when tasks are due, I do not want to see when my classes are.
+  (setq org-agenda-include-diary t)
+  ;; Start in log mode, include deadlines
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-agenda-include-deadlines t)
+  (setq org-deadline-warning-days 7)
+  ;; Try to stop duplicate agenda todos: For now I am removing this, as I still want scheduled tasks to appear in the timeline agenda.
+  ;;(setq org-agenda-skip-scheduled-if-deadline-is-shown t)
+
+  ;; Hide completed tasks from agenda:
+  (setq org-agenda-skip-scheduled-if-done t)
+  (setq org-agenda-skip-deadline-if-done t)
+
+  ;; Taken from https://github.com/claykaufmann/dotfiles/blob/main/doom/.doom.d/config.org 
+  ;; Set the org agenda prefix format. This removes roam date titles from the agenda view mainly. (again, from Boris Buliga in his Task Management with Org Roam series) For todo’s, I used this stack overflow post to add the deadline to the todo tag. Being able to view the deadline in task view was extremely important to me, and this accomplishes that.
+  (setq org-agenda-prefix-format
+        '((agenda . " %i %(vulpea-agenda-category 18)%?-14t% s")
+          (todo . " %i %(vulpea-agenda-category 18) %-11(let ((deadline (org-get-deadline-time (point)))) (if deadline (format-time-string \"%Y-%m-%d\" deadline) \"\")) ")
+          (tags . " %i %(vulpea-agenda-category 18) %t ")
+          (search . " %i %(vaulpea-agenda-category 18) %t ")))
+
+  ;; Agenda Styling
+  ;; Add an extra line after each day for better spacing in the default agenda.
+  (setq org-agenda-format-date
+            (lambda (date)
+              (concat "\n" (org-agenda-format-date-aligned date))))
+  ;; Super Agenda   ;; Enable super agenda mode:
+  ;; Super agenda is used to augment org agenda and categorize things better.
+  (org-super-agenda-mode)
+
+  ;; Set agenda to start today:
+  (use-package! org-super-agenda
+      :config
+      (setq org-agenda-start-day nil  ; today
+      ))
+  ;; Agenda Views
+  ;; The idea here is to put all agenda views inside the custom commands, and for ones that require super agenda, add super agenda groups to it.
+  ;; The views I want to create right now are as follows:
+  ;; Daily Inside the daily view, will be all tasks due the next day, what I should refile, and organized items by project, assignment, etc.
+  ;; Weekly The weekly view will have all tasks due in the next week, etc.
+  ;; Refile The refile view shows all things that are marked with the refile tag. Typically this is just anything in the inbox file.
+  ;; Modifying basic agenda views
+  (setq org-agenda-time-grid '((daily today require-timed) "----------------------" nil))
+  (setq org-agenda-use-time-grid t)
+  
+  ;; set the span of the default agenda to be a week
+  (setq org-agenda-span 10)
+
+  ;; show deadlines
+  ;; Custom Command Agenda Views
+  ;; Add custom views:
+  (setq org-agenda-custom-commands
+  
+        ;; a refiling view
+        '(("r" "Things to refile"
+           ((tags
+             "REFILE"
+             ((org-agenda-overriding-header "To refile:")
+              (org-tags-match-list-sublevels nil)))))
+  
+          ;; the day view (used most often)
+          ("d" "Day View"
+  
+           ;; show the base agenda
+           ((agenda "" ((org-agenda-span 'day)
+                        ;; enable the diary in the daily view so I can see how classes fit into the day
+                        (org-agenda-include-diary t) 
+                        ;; add a hook to call org mac iCal
+                        (org-agenda-mode-hook (lambda () (org-mac-iCal)))
+                        ;; add 7 days of warning to get things due this week
+                        (org-deadline-warning-days 7)
+                        ;; set super agenda groups
+                        (org-super-agenda-groups
+                          ;; main group of today to show the time grid
+                         '((:name "Today"
+                            :time-grid t
+                            :date today
+                            :order 1
+                            )
+                           ;; second group to show all tasks due this week (using deadline-warning-days)
+                           (:name "Due this week"
+                            :todo t
+                            :order 4)))))
+  
+            ;; show a bunch of different todo groups
+            (alltodo "" ((org-agenda-overriding-header "")
+                         (org-super-agenda-groups
+                          ;; next up are all todos marked NEXT
+                          '((:name "Next up"
+                             :todo "NEXT"
+                             :discard (:todo "PROJ")
+                             :discard (:tag "REFILE")
+                             :order 1)
+                            ;; all taks with a priority of A
+                            (:name "Important"
+                             :priority "A"
+                             :order 3)
+                            ;; tasks that are estimated to be less than 30 minutes
+                            (:name "Quick Picks"
+                             :effort< "0:30"
+                             :order 5)
+                            ;; overdue tasks
+                            (:name "Overdue"
+                             :deadline past
+                             :order 4)
+                            (:name "Due Today"
+                             :deadline today
+                             :order 2)
+                            (:name "Due Soon"
+                             :deadline future
+                             :order 8)
+                            (:name "Overdue"
+                             :deadline past
+                             :face error
+                             :order 7)
+                            (:name "Issues"
+                             :tag "Issue"
+                             :order 11)
+  
+                            ;; tasks with no due date
+                            (:name "No due date"
+                             :deadline nil
+                             :order 70)
+  
+                            ;; emacs related tasks (before projects to separate them)
+                            (:name "Emacs"
+                             :tag "emacs"
+                             :order 12)
+  
+                            ;; all projects, hide the PROJ tag to avoid duplication (the tag will appear if the due date is coming up in the top week section)
+                            (:name "Projects"
+                             :todo "TODO"
+                             :discard (:todo "PROJ")
+                             :tag ("Project" "Metaproject")
+                             :order 9)
+
+                            (:name "Others"
+                             :deadline t
+                             :order 10) 
+                            ;; discard all things with the REFILE tag, as they will appear in the next group
+                            (:discard (:tag "REFILE")
+                             :order 80)
+                            ))))
+  
+            ;; refile section, to show anything that should be refiled
+            (tags "REFILE" ((org-agenda-overriding-header "To Refile:")))))))
+
+  ;; We now set a bunch of custom faces for different org agenda variables, to make the custom org agenda look much better.
+  (custom-set-faces!
+  ;; set the agenda structure font (heading) mainly used to change the color of super agenda group names
+    '(org-agenda-structure :slant italic :foreground "green3" :width semi-expanded )
+    ;; set the shceduled today font (for some reason it defaults to being dimmed, which was not nice)
+    '(org-scheduled-today :foreground "MediumPurple1")
+    ;; by default this is white, add some color to make it pop on the time grid
+    '(org-agenda-diary :foreground "goldenrod1")))
+
+ ;; (setq org-columns-default-format "%40ITEM(Task) %Effort(EE){:} %CLOCKSUM(Time Spent) %SCHEDULED(Scheduled) %DEADLINE(Deadline)")
+ ;; (setq org-agenda-custom-commands `((" " "Agenda"
+ ;;                                     ((alltodo ""
+ ;;                                               ((org-agenda-overriding-header "Inbox")
+ ;;                                                (org-agenda-files `(,(expand-file-name "gtd/inbox.org" org-directory)))))
+ ;;                                      (agenda ""
+ ;;                                              ((org-agenda-span 'week)
+ ;;                                               (org-deadline-warning-days 365)))
+ ;;                                      (todo "NEXT"
+ ;;                                            ((org-agenda-overriding-header "In Progress")
+ ;;                                             (org-agenda-files `(,(expand-file-name "gtd/projects.org" org-directory)))))
+ ;;                                      (todo "TODO"
+ ;;                                            ((org-agenda-overriding-header "Active Projects")
+ ;;                                             (org-agenda-files `(,(expand-file-name "gtd/projects.org" org-directory)))
+ ;;                                             (org-agenda-skip-function #'rish/skip-projects)))))))
 
 (use-package! org-roam
   :init
@@ -452,6 +644,7 @@
   (require 'org-roam-dailies) ;; Ensure the keymap is available
   (org-roam-db-autosync-mode +1)
   (org-roam-db-sync 'force)
+  ;; (org-check-agenda-file org-link-set-parameters)
   (set-popup-rules!
     `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
        :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
@@ -469,8 +662,7 @@
            :if-new (file+head "default/%<%Y%m%d%H%M%S>-${slug}.org" 
                               "${title}\n#+date: %U\n")
            :unnarrowed t)
-          ("m" "main" plain
-           "%?"
+          ("m" "main" plain "%?"
            :if-new (file+head "main/%<%Y%m%d%H%M%S>-${slug}.org"
                               "${title}\n#+date: %U\n")
            :immediate-finish t
@@ -481,16 +673,40 @@
                       "${title}\n#+date: %U\n")
            :immediate-finish t
            :unnarrowed t)
-          ("p" "project" plain "%?"
+          ;; the project template, used for projects WITH A DEADLINE
+          ("p" "project" plain "* Overview\n\n* Tasks\n** TODO Set project name and deadline\n\n* Ideas\n\n* Notes\n\n* Meetings\n\n* Resources\n\n* PROJ projectname"
            :if-new (file+head "project/%<%Y%m%d%H%M%S>-${slug}.org" 
-                              "${title}\n#+filetags: Project\n#+date: %U\n")
+                              "${title}\n#+filetags: Project")
            :unnarrowed t)
+           
+          ;; the metaproject template, used for projects without a deadline
+          ("P" "meta project" plain "* Overview\n\n* Tasks\n** TODO Add project name and set a work schedule\n\n* Thoughts\n\n* Notes\n\n* Meetings\n\n* Resources\n\n* PROJ projectname"
+           :if-new (file+head "project/%<%Y%m%d%H%M%S>-${slug}.org" 
+                              "${title}\n#+filetags: Metaproject")
+           :unnarrowed t)
+;;          ("p" "project" plain "%?"
+;;           :if-new (file+head "project/%<%Y%m%d%H%M%S>-${slug}.org" 
+;;                              "${title}\n#+filetags: Project\n#+date: %U\n")
+;;           :unnarrowed t)
+
+          ;; class note template, used for a class note for a class
+          ("c" "class-note" plain "* Overview\n\n\n* Notes\n\n\n* References"
+           :if-new (file+head "class-notes/%<%Y%m%d%H%M%S>-${slug}.org" 
+                              "${title}\n#+filetags: classnote:classname:class")
+           :unnarrowed t)
+
+          ("w" "weekly goal setting" plain "* Goals\n\n* Action Items\n"
+           :if-new (file+head "weekly/%<%Y%m%d%H%M%S>-${slug}.org" 
+                              "${title}\n#+filetags: weeklygoals")
+           :unnarrowed t)
+          
           ("a" "article" plain "%?"
            :if-new
            (file+head "articles/%<%Y%m%d%H%M%S>-${slug}.org" 
                       "${title}\n#+filetags: :article:\n#+date: %U\n")
            :immediate-finish t
            :unnarrowed t)))
+
   (defun rish/tag-new-node-as-draft ()
     (org-roam-tag-add '("draft")))
   (add-hook 'org-roam-capture-new-node-hook #'rish/tag-new-node-as-draft)
@@ -513,17 +729,83 @@
       (org-roam-capture- :templates
                          '(("r" "reference" plain "%?" :if-new
                             (file+head "reference/${citekey}.org"
-                                       ":PROPERTIES:
-:ROAM_REFS: [cite:@${citekey}]
-:END:
-#+title: ${title}\n")
+                                       ":PROPERTIES: :ROAM_REFS: [cite:@${citekey}] 
+                                       :END: #${title}\n")
                             :immediate-finish t
                             :unnarrowed t))
                          :info (list :citekey (car keys-entries))
                          :node (org-roam-node-create :title title)
                          :props '(:finalize find-file)))))
 
+(use-package! vulpea
+  :ensure t
+  :after (org-agenda org-roam)
+  :init
+  (map! :leader
+        :prefix "v"
+        :desc "vulpea-insert" "i" #'vulpea-insert
+        :desc "vulpea-tags-add" "t" #'vulpea-tags-add
+        :desc "vulpea-tags-delete" "T" #'vulpea-tags-delete
+        :desc "vulpea-agenda-main" "a" #'vulpea-agenda-main
+        :desc "vulpea-agenda-person" "p" #'vulpea-agenda-person
+        :desc "vulpea-find" "f" #'vulpea-find
+        :desc "vulpea-capture-task" "c" #'vulpea-capture-task
+        :desc "vulpea-capture-meeting" "m" #'vulpea-capture-meeting
+        )
+  (add-to-list 'window-buffer-change-functions 
+                #'vulpea-setup-buffer)
+  ;; pretty org files
+  (setq
+   org-adapt-indentation nil
+   org-hidden-keywords nil
+   org-hide-emphasis-markers nil
+   org-hide-leading-stars nil
+   org-image-actual-width '(512)
+   org-imenu-depth 1
+   org-pretty-entities nil
+   org-startup-folded t)
+
+  ;; do not allow invisible edits (...)
+  (setq org-catch-invisible-edits 'error)
+
+  ;; formatting for properties
+  (setq org-property-format "%-24s %s")
+  
+  ;; hook into org-roam-db-autosync-mode you wish to enable
+  ;; persistence of meta values (see respective section in README to
+  ;; find out what meta means)
+  :config
+  (load! "vulpea")
+  (load! "vulpea-agenda")
+  (load! "vulpea-capture")
+  ;; Disable vulpea's custom agenda commands
+  ;; (load! "lib-vulpea-agenda")
+  ;; avoid noisy `org-check-agenda-file'
+  ;; (advice-add #'org-check-agenda-file :around 
+  ;;             #'vulpea-check-agenda-file)
+  (add-hook 'vulpea-insert-handle-functions 
+            #'vulpea-insert-handle)
+
+  ;; (advice-add 'org-agenda :before #'vulpea-agenda-files-update)
+
+  ;; prevent headings from clogging tag
+  ;; tags
+  (setq org-tag-persistent-alist '(("FOCUS" . ?f) 
+                                   ("PROJECT" . ?p)))
+  (setq org-use-tag-inheritance t)
+  (setq org-tags-exclude-from-inheritance '("project" 
+                                            "people"))
+  (setq-default vulpea-find-default-filter 
+                (lambda (note) 
+                  (= (vulpea-note-level note) 0)) 
+                vulpea-insert-default-filter 
+                (lambda (note) 
+                  (= (vulpea-note-level note) 0)))
+
+  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
+
 ;;(use-package! org-super-agenda)
+
 (use-package! thrift)
 
 (after! company
@@ -619,40 +901,6 @@ With a prefix ARG always prompt for command to use."
  [backtab] #'+fold/toggle
  [C-tab] #'+fold/open-all
  [C-iso-lefttab] #'+fold/close-all)
-
-(use-package! vulpea
-  :ensure t
-  :after (org-agenda org-roam)
-  :init
-  (map! :leader
-        :prefix "v"
-        :desc "vulpea-insert" "i" #'vulpea-insert
-        :desc "vulpea-tags-add" "t" #'vulpea-tags-add
-        :desc "vulpea-tags-delete" "T" #'vulpea-tags-delete
-        :desc "vulpea-agenda-files" "a" #'vulpea-agenda-files
-        :desc "vulpea-find" "f" #'vulpea-find
-        )
-  (add-to-list 'window-buffer-change-functions 
-               #'vulpea-setup-buffer)
-  ;; hook into org-roam-db-autosync-mode you wish to enable
-  ;; persistence of meta values (see respective section in README to
-  ;; find out what meta means)
-  :config
-  (load! "vulpea")
-  (load! "vulpea-agenda")
-  (add-hook 'vulpea-insert-handle-functions 
-            #'vulpea-insert-handle)
-  ;; prevent headings from clogging tag 
-  (setq org-use-tag-inheritance t)
-  (setq org-tags-exclude-from-inheritance '("project" 
-                                            "people"))
-  (setq-default vulpea-find-default-filter 
-                (lambda (note) 
-                  (= (vulpea-note-level note) 0)) 
-                vulpea-insert-default-filter 
-                (lambda (note) 
-                  (= (vulpea-note-level note) 0)))
-  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
 
 (global-set-key (kbd "s-<right>") 'move-end-of-line)
 (global-set-key (kbd "s-z") 'undo)

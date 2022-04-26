@@ -146,6 +146,29 @@ Refer to `org-agenda-prefix-format' for more information."
                (vulpea--title-to-tag title)
                (org-get-tags nil t))))))))))
 
+;;;###autoload
+(defun vulpea-subdir-select ()
+  "Select notes subdirectory."
+  (interactive)
+  (let ((dirs (cons
+               "."
+               (seq-map
+                (lambda (p)
+                  (string-remove-prefix vulpea-directory p))
+                (directory-subdirs vulpea-directory 'recursive)))))
+    (completing-read "Subdir: " dirs nil t)))
+
+;;;###autoload
+;; org-check-agenda-file
+(defun vulpea-check-agenda-file (&rest _)
+  "A noop advice for `org-check-agenda-file'.
+Since this function is called from multiple places, it is very
+irritating to answer this question every time new note is created.
+Also, it doesn't matter if the file in question is present in the
+list of `org-agenda-files' or not, since it is built dynamically
+via `vulpea-agenda-files-update'.")
+
+
 ;; functions borrowed from `vulpea' library
 ;; https://github.com/d12frosted/vulpea/blob/6a735c34f1f64e1f70da77989e9ce8da7864e5ff/vulpea-buffer.el
 (defun vulpea-project-p ()

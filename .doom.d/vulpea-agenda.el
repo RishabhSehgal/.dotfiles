@@ -66,6 +66,8 @@ tasks."
       "agenda"
       "work"]))))
 
+
+;;;###autoload
 (defun vulpea-agenda-files-update (&rest _)
   "Update the value of `org-agenda-files'."
   (setq org-agenda-files (vulpea-agenda-files)))
@@ -76,41 +78,33 @@ tasks."
 (advice-add 'org-agenda :before #'vulpea-agenda-files-update)
 (advice-add 'org-todo-list :before #'vulpea-agenda-files-update)
 
-(setq my-agenda-work-cmd '(agenda
-                           ""
-                           ((org-agenda-span 'day)
-                            (org-agenda-skip-function 'my-agenda-skip-non-work)))
-      my-agenda-non-work-cmd '(agenda
-                               ""
-                               ((org-agenda-span 'day)
-                                (org-agenda-skip-function 'my-agenda-skip-work)))
-      org-agenda-custom-commands
-      `(("p" "Personal"
-         (,my-agenda-non-work-cmd))
-        ("w" "Work"
-         (,my-agenda-work-cmd))))
+(defvar vulpea-agenda-main-buffer-name "*agenda:main*"
+  "Name of the main agenda buffer.")
 
-(defun my-agenda-skip-work ()
-  "Skip tasks that are tagged as work related."
-  (save-restriction
-    (widen)
-    (let ((subtree-end (save-excursion (org-end-of-subtree t))))
-      (cond
-       ((seq-contains-p (org-get-tags) "work")
-        subtree-end)
-       (t
-        nil)))))
+;;;###autoload
+(defun vulpea-agenda-main ()
+  "Show main `org-agenda' view."
+  (interactive)
+  (org-agenda nil " "))
 
-(defun my-agenda-skip-non-work ()
-  "Skip tasks that are tagged as non-work related."
-  (save-restriction
-    (widen)
-    (let ((subtree-end (save-excursion (org-end-of-subtree t))))
-      (cond
-       ((not (seq-contains-p (org-get-tags) "work"))
-        subtree-end)
-       (t
-        nil)))))
+;;;###autoload
+(defun vulpea-agenda-person ()
+  "Show main `org-agenda' view."
+  (interactive)
+  (let* ((person (vulpea-select
+                  "Person"
+                  :filter-fn
+                  (lambda (note)
+                    (seq-contains-p (vulpea-note-tags note)
+                                    "people"))))
+         (node (org-roam-node-from-id (vulpea-note-id person)))
+         (names (cons (org-roam-node-title node)
+                      (org-roam-node-aliases node)))
+         (tags (seq-map #'vulpea--title-to-tag names))
+         (query (string-join tags "|"))) 
+    (let ((org-agenda-overriding-arguments (list t query)))
+      (org-agenda nil "M"))))
+
 
 ;; functions borrowed from `vulpea' library
 ;; https://github.com/d12frosted/vulpea/blob/6a735c34f1f64e1f70da77989e9ce8da7864e5ff/vulpea-buffer.el
