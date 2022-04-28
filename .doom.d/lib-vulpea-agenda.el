@@ -264,8 +264,18 @@ Callers of this function already widen the buffer view."
 
   ;; show agenda in current window
   org-agenda-window-setup 'current-window
+  
+  ;; Enabling a time grid and defining it
+  org-agenda-use-time-grid t
+  org-agenda-time-grid
+      (quote
+       ((daily today remove-match)
+        (0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2359 0100 0200)
+        "......" "----------------"))
 
-  ;; show deadlines ;; Custom Command Agenda Views ;; Add custom views:
+
+  ;; show deadlines ;; Custom Command Agenda Views 
+  ;; Add custom views:
   org-agenda-custom-commands 
   '(("A" "Agenda"
      (,vulpea-agenda-cmd-refile

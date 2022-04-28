@@ -415,12 +415,12 @@
 
 (use-package! org-agenda
   :init
-  (map! "<f1>" #'rish/switch-to-agenda)
+  ;;(map! "<f1>" #'rish/switch-to-agenda)
   (setq org-agenda-block-separator nil
         org-agenda-start-with-log-mode t)
-  (defun rish/switch-to-agenda ()
-    (interactive)
-    (org-agenda nil " "))
+  ;;(defun rish/switch-to-agenda ()
+  ;;  (interactive)
+  ;;  (org-agenda nil " "))
   :config
   (defun rish/is-project-p ()
     "Any task with a todo keyword subtask"
@@ -449,161 +449,7 @@
          (t
           nil)))))
 
-  ;; Disable the diary by default in agenda views, as it adds clutter to the default weekly agenda. In the weekly agenda I simply want to see when tasks are due, I do not want to see when my classes are.
-  (setq org-agenda-include-diary t)
-  ;; Start in log mode, include deadlines
-  (setq org-agenda-start-with-log-mode t)
-  (setq org-agenda-include-deadlines t)
-  (setq org-deadline-warning-days 7)
-  ;; Try to stop duplicate agenda todos: For now I am removing this, as I still want scheduled tasks to appear in the timeline agenda.
-  ;;(setq org-agenda-skip-scheduled-if-deadline-is-shown t)
-
-  ;; Hide completed tasks from agenda:
-  (setq org-agenda-skip-scheduled-if-done t)
-  (setq org-agenda-skip-deadline-if-done t)
-
-  ;; Taken from https://github.com/claykaufmann/dotfiles/blob/main/doom/.doom.d/config.org 
-  ;; Set the org agenda prefix format. This removes roam date titles from the agenda view mainly. (again, from Boris Buliga in his Task Management with Org Roam series) For todo’s, I used this stack overflow post to add the deadline to the todo tag. Being able to view the deadline in task view was extremely important to me, and this accomplishes that.
-  (setq org-agenda-prefix-format
-        '((agenda . " %i %(vulpea-agenda-category 18)%?-14t% s")
-          (todo . " %i %(vulpea-agenda-category 18) %-11(let ((deadline (org-get-deadline-time (point)))) (if deadline (format-time-string \"%Y-%m-%d\" deadline) \"\")) ")
-          (tags . " %i %(vulpea-agenda-category 18) %t ")
-          (search . " %i %(vaulpea-agenda-category 18) %t ")))
-
-  ;; Agenda Styling
-  ;; Add an extra line after each day for better spacing in the default agenda.
-  (setq org-agenda-format-date
-            (lambda (date)
-              (concat "\n" (org-agenda-format-date-aligned date))))
-  ;; Super Agenda   ;; Enable super agenda mode:
-  ;; Super agenda is used to augment org agenda and categorize things better.
-  (org-super-agenda-mode)
-
-  ;; Set agenda to start today:
-  (use-package! org-super-agenda
-      :config
-      (setq org-agenda-start-day nil  ; today
-      ))
-  ;; Agenda Views
-  ;; The idea here is to put all agenda views inside the custom commands, and for ones that require super agenda, add super agenda groups to it.
-  ;; The views I want to create right now are as follows:
-  ;; Daily Inside the daily view, will be all tasks due the next day, what I should refile, and organized items by project, assignment, etc.
-  ;; Weekly The weekly view will have all tasks due in the next week, etc.
-  ;; Refile The refile view shows all things that are marked with the refile tag. Typically this is just anything in the inbox file.
-  ;; Modifying basic agenda views
-  (setq org-agenda-time-grid '((daily today require-timed) "----------------------" nil))
-  (setq org-agenda-use-time-grid t)
-  
-  ;; set the span of the default agenda to be a week
-  (setq org-agenda-span 10)
-
-  ;; show deadlines
-  ;; Custom Command Agenda Views
-  ;; Add custom views:
-  (setq org-agenda-custom-commands
-  
-        ;; a refiling view
-        '(("r" "Things to refile"
-           ((tags
-             "REFILE"
-             ((org-agenda-overriding-header "To refile:")
-              (org-tags-match-list-sublevels nil)))))
-  
-          ;; the day view (used most often)
-          ("d" "Day View"
-  
-           ;; show the base agenda
-           ((agenda "" ((org-agenda-span 'day)
-                        ;; enable the diary in the daily view so I can see how classes fit into the day
-                        (org-agenda-include-diary t) 
-                        ;; add a hook to call org mac iCal
-                        (org-agenda-mode-hook (lambda () (org-mac-iCal)))
-                        ;; add 7 days of warning to get things due this week
-                        (org-deadline-warning-days 7)
-                        ;; set super agenda groups
-                        (org-super-agenda-groups
-                          ;; main group of today to show the time grid
-                         '((:name "Today"
-                            :time-grid t
-                            :date today
-                            :order 1
-                            )
-                           ;; second group to show all tasks due this week (using deadline-warning-days)
-                           (:name "Due this week"
-                            :todo t
-                            :order 4)))))
-  
-            ;; show a bunch of different todo groups
-            (alltodo "" ((org-agenda-overriding-header "")
-                         (org-super-agenda-groups
-                          ;; next up are all todos marked NEXT
-                          '((:name "Next up"
-                             :todo "NEXT"
-                             :discard (:todo "PROJ")
-                             :discard (:tag "REFILE")
-                             :order 1)
-                            ;; all taks with a priority of A
-                            (:name "Important"
-                             :priority "A"
-                             :order 3)
-                            ;; tasks that are estimated to be less than 30 minutes
-                            (:name "Quick Picks"
-                             :effort< "0:30"
-                             :order 5)
-                            ;; overdue tasks
-                            (:name "Overdue"
-                             :deadline past
-                             :order 4)
-                            (:name "Due Today"
-                             :deadline today
-                             :order 2)
-                            (:name "Due Soon"
-                             :deadline future
-                             :order 8)
-                            (:name "Overdue"
-                             :deadline past
-                             :face error
-                             :order 7)
-                            (:name "Issues"
-                             :tag "Issue"
-                             :order 11)
-  
-                            ;; tasks with no due date
-                            (:name "No due date"
-                             :deadline nil
-                             :order 70)
-  
-                            ;; emacs related tasks (before projects to separate them)
-                            (:name "Emacs"
-                             :tag "emacs"
-                             :order 12)
-  
-                            ;; all projects, hide the PROJ tag to avoid duplication (the tag will appear if the due date is coming up in the top week section)
-                            (:name "Projects"
-                             :todo "TODO"
-                             :discard (:todo "PROJ")
-                             :tag ("Project" "Metaproject")
-                             :order 9)
-
-                            (:name "Others"
-                             :deadline t
-                             :order 10) 
-                            ;; discard all things with the REFILE tag, as they will appear in the next group
-                            (:discard (:tag "REFILE")
-                             :order 80)
-                            ))))
-  
-            ;; refile section, to show anything that should be refiled
-            (tags "REFILE" ((org-agenda-overriding-header "To Refile:")))))))
-
-  ;; We now set a bunch of custom faces for different org agenda variables, to make the custom org agenda look much better.
-  (custom-set-faces!
-  ;; set the agenda structure font (heading) mainly used to change the color of super agenda group names
-    '(org-agenda-structure :slant italic :foreground "green3" :width semi-expanded )
-    ;; set the shceduled today font (for some reason it defaults to being dimmed, which was not nice)
-    '(org-scheduled-today :foreground "MediumPurple1")
-    ;; by default this is white, add some color to make it pop on the time grid
-    '(org-agenda-diary :foreground "goldenrod1")))
+ )
 
  ;; (setq org-columns-default-format "%40ITEM(Task) %Effort(EE){:} %CLOCKSUM(Time Spent) %SCHEDULED(Scheduled) %DEADLINE(Deadline)")
  ;; (setq org-agenda-custom-commands `((" " "Agenda"
@@ -779,14 +625,14 @@
   (load! "vulpea-agenda")
   (load! "vulpea-capture")
   ;; Disable vulpea's custom agenda commands
-  ;; (load! "lib-vulpea-agenda")
+  (load! "lib-vulpea-agenda")
   ;; avoid noisy `org-check-agenda-file'
-  ;; (advice-add #'org-check-agenda-file :around 
-  ;;             #'vulpea-check-agenda-file)
+  (advice-add #'org-check-agenda-file :around 
+              #'vulpea-check-agenda-file)
   (add-hook 'vulpea-insert-handle-functions 
             #'vulpea-insert-handle)
 
-  ;; (advice-add 'org-agenda :before #'vulpea-agenda-files-update)
+  (advice-add 'org-agenda :before #'vulpea-agenda-files-update)
 
   ;; prevent headings from clogging tag
   ;; tags
@@ -804,7 +650,165 @@
 
   :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
 
-;;(use-package! org-super-agenda)
+(use-package! org-super-agenda 
+  :commands org-super-agenda-mode
+  ;; Taken from https://github.com/claykaufmann/dotfiles/blob/main/doom/.doom.d/config.org 
+  ;; Set the org agenda prefix format. This removes roam date titles from the agenda view mainly. (again, from Boris Buliga in his Task Management with Org Roam series) For todo’s, I used this stack overflow post to add the deadline to the todo tag. Being able to view the deadline in task view was extremely important to me, and this accomplishes that.
+  :config
+  (setq org-agenda-prefix-format
+        '((agenda . " %i %(vulpea-agenda-category 18)%?-14t% s")
+          (todo . " %i %(vulpea-agenda-category 18) %-11(let ((deadline (org-get-deadline-time (point)))) (if deadline (format-time-string \"%Y-%m-%d\" deadline) \"\")) ")
+          (tags . " %i %(vulpea-agenda-category 18) %t ")
+          (search . " %i %(vaulpea-agenda-category 18) %t ")))
+
+  (setq org-agenda-use-time-grid t)
+  (setq org-agenda-time-grid
+      (quote
+       ((daily today remove-match)
+        (0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2359 0100 0200)
+        "......" "----------------")))
+
+  ;;(setq org-agenda-time-grid '((daily today require-timed) "----------------------" nil)
+  (setq org-agenda-skip-scheduled-if-done t
+        org-agenda-skip-deadline-if-done t
+        org-agenda-include-deadlines t
+        org-agenda-include-diary t
+        org-agenda-block-separator nil
+        org-agenda-compact-blocks t
+        org-agenda-start-with-log-mode t
+        org-deadline-warning-days 7  
+        org-agenda-start-day nil) ;; i.e. today
+
+  (setq org-agenda-sorting-strategy '((agenda deadline-up  habit-down time-up 
+                                              priority-down timestamp-down category-keep)))
+  ;; Agenda Styling
+  ;; Add an extra line after each day for better spacing in the default agenda.
+  (setq org-agenda-format-date
+            (lambda (date)
+              (concat "\n" (org-agenda-format-date-aligned date))))
+
+  (let ((org-super-agenda-group '((:auto-category t)))) (org-agenda-list))
+  
+  ;; set the span of the default agenda to be a week
+  (setq org-agenda-span 10)
+
+  ;; show deadlines
+  ;; Custom Command Agenda Views
+  ;; Add custom views:
+  (setq org-agenda-custom-commands
+  
+        ;; a refiling view
+        '(("r" "Things to refile"
+           ((tags
+             "REFILE"
+             ((org-agenda-overriding-header "To refile:")
+              (org-tags-match-list-sublevels nil)))))
+  
+          ;; the day view (used most often)
+          ("d" "Day View"
+  
+           ;; show the base agenda
+           ((agenda "" ((org-agenda-span 'day)
+                        ;; enable the diary in the daily view so I can see how classes fit into the day
+                        (org-agenda-include-diary t) 
+                        ;; add a hook to call org mac iCal
+                        (org-agenda-mode-hook (lambda () (org-mac-iCal)))
+                        ;; add 7 days of warning to get things due this week
+                        (org-deadline-warning-days 7)
+                        ;; set super agenda groups
+                        (org-super-agenda-groups
+                          ;; main group of today to show the time grid
+                         '((:name "Today"
+                            :time-grid t
+                            :date today
+                            :order 1
+                            )
+                           ;; second group to show all tasks due this week (using deadline-warning-days)
+                           (:name "Due this week"
+                            :todo t
+                            :order 4)))))
+  
+            ;; show a bunch of different todo groups
+            (alltodo "" ((org-agenda-overriding-header "")
+                         (org-super-agenda-groups
+                          ;; next up are all todos marked NEXT
+                          '((:name "Next up"
+                             :todo "NEXT"
+                             :discard (:todo "PROJ")
+                             :discard (:tag "REFILE")
+                             :order 1)
+                            ;; all taks with a priority of A
+                            (:name "Important"
+                             :priority "A"
+                             :order 3)
+                            ;; tasks that are estimated to be less than 30 minutes
+                            (:name "Quick Picks"
+                             :effort< "0:30"
+                             :order 5)
+                            ;; overdue tasks
+                            (:name "Overdue"
+                             :deadline past
+                             :order 4)
+                            (:name "Due Today"
+                             :deadline today
+                             :order 2)
+                            (:name "Due Soon"
+                             :deadline future
+                             :order 8)
+                            (:name "Overdue"
+                             :deadline past
+                             :face error
+                             :order 7)
+                            (:name "Issues"
+                             :tag "Issue"
+                             :order 11)
+  
+                            ;; tasks with no due date
+                            (:name "No due date"
+                             :deadline nil
+                             :order 70)
+  
+                            ;; emacs related tasks (before projects to separate them)
+                            (:name "Emacs"
+                             :tag "emacs"
+                             :order 12)
+  
+                            ;; all projects, hide the PROJ tag to avoid duplication (the tag will appear if the due date is coming up in the top week section)
+                            (:name "Projects"
+                             :todo "TODO"
+                             :discard (:todo "PROJ")
+                             :tag ("Project" "Metaproject")
+                             :order 9)
+
+                            (:name "Others"
+                             :deadline t
+                             :order 10) 
+                            ;; discard all things with the REFILE tag, as they will appear in the next group
+                            (:discard (:tag "REFILE")
+                             :order 80)
+                            ))))
+  
+            ;; refile section, to show anything that should be refiled
+            (tags "REFILE" ((org-agenda-overriding-header "To Refile:")))))))
+
+  ;; We now set a bunch of custom faces for different org agenda variables, to make the custom org agenda look much better.
+  (custom-set-faces!
+  ;; set the agenda structure font (heading) mainly used to change the color of super agenda group names
+    '(org-agenda-structure :slant italic :foreground "green3" :width semi-expanded )
+    ;; set the shceduled today font (for some reason it defaults to being dimmed, which was not nice)
+    '(org-scheduled-today :foreground "MediumPurple1")
+    ;; by default this is white, add some color to make it pop on the time grid
+    '(org-agenda-diary :foreground "goldenrod1"))
+              
+)
+
+;; Moved outside the use-package! agenda so it shows on the home screen
+(defun rish/switch-to-agenda ()
+    (interactive)
+    (org-agenda nil "o"))
+
+(after! org-agenda
+   (org-super-agenda-mode))
 
 (use-package! thrift)
 
