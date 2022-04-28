@@ -226,6 +226,7 @@
 
 (bind-key "C-c <tab>" #'rish/org-capture-inbox)
 (bind-key "C-c SPC" #'rish/org-agenda)
+(bind-key "C-c SPC" #'org-agenda)
 
 ;;(setq org-todo-keywords
 ;;      '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)")))
@@ -305,9 +306,12 @@
                       ("@work" . ?w)))
 
 (setq org-fast-tag-selection-single-key nil)
+(setq rish/org-roam-projects-directory "~/org/roam/project")
 (setq org-refile-use-outline-path 'file
       org-outline-path-complete-in-steps nil)
+
 (setq org-refile-allow-creating-parent-nodes 'confirm
+      ;;org-refile-targets (directory-files-recursively rish/org-roam-projects-directory "\\.org$"))
       org-refile-targets '(("projects.org" . (:level . 1))))
 
 (defun rish/org-process-inbox ()
@@ -387,6 +391,8 @@
       "i" #'org-agenda-clock-in
       "I" #'rish/clock-in-and-advance
       "r" #'rish/org-process-inbox
+      "p" #'rish/org-agenda-process-inbox-item
+      "e" #'rish/my-org-agenda-set-effort
       "R" #'org-agenda-refile
       "c" #'rish/org-inbox-capture)
 
@@ -652,6 +658,13 @@
 
 (use-package! org-super-agenda 
   :commands org-super-agenda-mode
+  :init
+  :init
+  (map! :leader
+        :prefix "s"
+        :desc "process-single-inbox-item" "p" #'rish/org-agenda-process-inbox-item
+        :desc "switch-to-agenda" "r" #'rish/switch-to-agenda
+        )
   ;; Taken from https://github.com/claykaufmann/dotfiles/blob/main/doom/.doom.d/config.org 
   ;; Set the org agenda prefix format. This removes roam date titles from the agenda view mainly. (again, from Boris Buliga in his Task Management with Org Roam series) For todo’s, I used this stack overflow post to add the deadline to the todo tag. Being able to view the deadline in task view was extremely important to me, and this accomplishes that.
   :config
@@ -662,11 +675,19 @@
           (search . " %i %(vaulpea-agenda-category 18) %t ")))
 
   (setq org-agenda-use-time-grid t)
-  (setq org-agenda-time-grid
-      (quote
-       ((daily today remove-match)
-        (0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2359 0100 0200)
-        "......" "----------------")))
+  ;; (setq org-agenda-sorting-strategy '((agenda deadline-up  habit-down time-up 
+  ;;                                             priority-down timestamp-down category-keep)))
+  (setq org-agenda-sorting-strategy 
+        '((agenda time-up priority-down category-keep) 
+          (todo   priority-down category-keep) 
+          (tags   priority-down category-keep) 
+          (search category-keep)))
+  (setq org-agenda-time-grid '((daily today remove-match) (0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2359) "......" "----------------"))
+ ;; (setq org-agenda-time-grid
+ ;;     (quote
+ ;;      ((daily today required-time)
+ ;;       (0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2359 0100 0200)
+ ;;       "......" "----------------")))
 
   ;;(setq org-agenda-time-grid '((daily today require-timed) "----------------------" nil)
   (setq org-agenda-skip-scheduled-if-done t
@@ -679,13 +700,13 @@
         org-deadline-warning-days 7  
         org-agenda-start-day nil) ;; i.e. today
 
-  (setq org-agenda-sorting-strategy '((agenda deadline-up  habit-down time-up 
-                                              priority-down timestamp-down category-keep)))
+
   ;; Agenda Styling
   ;; Add an extra line after each day for better spacing in the default agenda.
   (setq org-agenda-format-date
             (lambda (date)
               (concat "\n" (org-agenda-format-date-aligned date))))
+  (setq org-columns-default-format "%40ITEM(Task) %Effort(EE){:} %CLOCKSUM(Time Spent) %SCHEDULED(Scheduled) %DEADLINE(Deadline)")
 
   (let ((org-super-agenda-group '((:auto-category t)))) (org-agenda-list))
   
@@ -743,7 +764,7 @@
                              :order 3)
                             ;; tasks that are estimated to be less than 30 minutes
                             (:name "Quick Picks"
-                             :effort< "0:30"
+                             :effort< "0:31"
                              :order 5)
                             ;; overdue tasks
                             (:name "Overdue"
@@ -801,6 +822,20 @@
     '(org-agenda-diary :foreground "goldenrod1"))
               
 )
+
+(setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
+(setq org-refile-use-outline-path 'file)
+(setq org-refile-allow-creating-parent-nodes 'confirm)
+(setq org-outline-path-complete-in-steps nil)
+
+(defun rish/org-agenda-process-inbox-item ()
+  "Process a single item in the org-agenda."
+  (interactive)
+  (org-with-wide-buffer
+   (org-agenda-set-tags)
+   (org-agenda-priority)
+   (call-interactively 'rish/my-org-agenda-set-effort)
+   (org-agenda-refile nil nil t)))
 
 ;; Moved outside the use-package! agenda so it shows on the home screen
 (defun rish/switch-to-agenda ()
